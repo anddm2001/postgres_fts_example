@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  pgsql-pta:
+    build:
+        context: .
+        dockerfile: ./docker/postgres/Dockerfile
+    image: buddler/pgsql-pta
+    container_name: pgsql-pta
+    env_file:
+      - .env
+    environment:
+        PGPASSWORD: '${DB_PASSWORD:-secret}'
+        POSTGRES_DB: '${DB_DATABASE}'
+        POSTGRES_USER: '${DB_USERNAME}'
+        POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./migrations/:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+        test: [ 'CMD', 'pg_isready', '-q', '-d', '${DB_DATABASE}', '-U', '${DB_USERNAME}' ]
+        retries: 3
+        timeout: 5s
+    restart: on-failure
+    networks:
+      - sail
+  migrator:
+    build:
+      context: .
+      dockerfile: ./docker/migration/Dockerfile
+    container_name: migrator
+    image: buddler/pta-migrator
+    restart: on-failure
+    environment:
+      DB_HOST: pgsql-pta
+    networks:
+      - sail
+    depends_on:
+      pgsql-pta:
+        condition: service_healthy
+
+networks:
+    sail:
+        driver: bridge
+    

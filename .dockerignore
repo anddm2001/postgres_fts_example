@@ -1,0 +1,9 @@
+.dockerignore
+.gitmodules
+.gitignore
+.env.example
+parse.py
+requirements.txt
+Dockerfile
+README.md
+
